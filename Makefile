@@ -1,11 +1,31 @@
+# REQUIRED: The following libraries are compiled via
+# make static_lib command, and rename the libaray to the current directory
 PLR_LIB=./plr_librocksdb.a
 DEFAULT_LIB=./default_librocksdb.a
+
+# REQUIRED: The database path for the PLR and Default RocksDB to test the space
+# IT SHOULD BE THE SAME THROUGHOUT THE PROCESS
 PLR_DB_PATH=./plr_test_db
 DEFAULT_DB_PATH=./default_test_db
+
+# REQUIRED: Generated data path and name
+# The file name will append _uniform, _linear, _exponential
+# IT SHOULD BE THE SAME THROUGHOUT THE PROCESS
 GENERATED_FILE_PATH=./
 GENERATED_FILE_NAME=generated_data
+
+# Testing type, could be {uniform, linear, exponential}
 TYPE=exponential
+# Number of entries to generate
 NUM_ENTRIES=1000000
+
+# Usage:
+# 1. Config the above variables
+# 2. move the required rocksdb libraries to the current directory
+# 3. make generate_data to generate the data
+# 4. make testing to ingest the data and create DB
+# 5. make report to get the total index size of the DB
+
 
 generate_data:
 	g++ -std=c++11 ./generate_data.cpp -o ./generate_data -I ./ -lz -lpthread -lsnappy -lbz2 -llz4 -lzstd
