@@ -17,7 +17,7 @@ GENERATED_FILE_NAME=generated_data
 # Testing type, could be {uniform, linear, exponential}
 TYPE=exponential
 # Number of entries to generate
-NUM_ENTRIES=1000000
+NUM_ENTRIES=10000000
 
 # Usage:
 # 1. Config the above variables
@@ -26,8 +26,12 @@ NUM_ENTRIES=1000000
 # 4. make testing to ingest the data and create DB
 # 5. make report to get the total index size of the DB
 
+all:
 
 generate_data:
+	echo "Generating data"
+	rm -rf *.dat
+	rm -f generate_data
 	g++ -std=c++11 ./generate_data.cpp -o ./generate_data -I ./ -lz -lpthread -lsnappy -lbz2 -llz4 -lzstd
 	./generate_data $(GENERATED_FILE_PATH)$(GENERATED_FILE_NAME) $(NUM_ENTRIES)
 testing:
@@ -36,8 +40,21 @@ testing:
 	g++ -std=c++11 ./database_put_default.cpp -o ./database_put_default $(DEFAULT_LIB) -I ./ -lz -lpthread -lsnappy -lbz2 -llz4 -lzstd
 	rm -rf $(PLR_DB_PATH)
 	rm -rf $(DEFAULT_DB_PATH)
+	echo "Running PLR RocksDB"
 	./database_put_plr $(PLR_DB_PATH) $(GENERATED_FILE_NAME)_$(TYPE).dat
+	echo "Running Default RocksDB"
 	./database_put_default $(DEFAULT_DB_PATH) $(GENERATED_FILE_NAME)_$(TYPE).dat
+
+testing_var:
+	echo "Ingesting $(TYPE) data"
+	g++ -std=c++11 ./database_put_plr_var.cpp -o ./database_put_plr_var $(PLR_LIB) -I ./ -lz -lpthread -lsnappy -lbz2 -llz4 -lzstd 
+	g++ -std=c++11 ./database_put_default_var.cpp -o ./database_put_default_var $(DEFAULT_LIB) -I ./ -lz -lpthread -lsnappy -lbz2 -llz4 -lzstd
+	rm -rf $(PLR_DB_PATH)
+	rm -rf $(DEFAULT_DB_PATH)
+	echo "Running PLR RocksDB"
+	./database_put_plr_var $(PLR_DB_PATH) $(GENERATED_FILE_NAME)_$(TYPE).dat
+	echo "Running Default RocksDB"
+	./database_put_default_var $(DEFAULT_DB_PATH) $(GENERATED_FILE_NAME)_$(TYPE).dat
 report:
 	g++ -std=c++11 ./read_all_sst.cpp -o ./read_all_sst $(PLR_LIB) -I ./ -lz -lpthread -lsnappy -lbz2 -llz4 -lzstd
 	echo "Default RocksDB Total Index size"

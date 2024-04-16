@@ -6,9 +6,12 @@
 
 using namespace std;
 
-
+// change var here
 const int KEY_SIZE = 8;
-const int VALUE_SIZE = 200;
+const int VALUE_SIZE = 400;
+const int TRIM_MIN = 0;
+const int TRIM_MAX = 399;
+
 template<typename T>
 std::string to_string(T value) {
     const size_t value_size = sizeof(value) / sizeof(char);
@@ -38,26 +41,29 @@ T to_type(std::string str) {
     return obj.value;
 }
 
+
 // Read the file and print the key-value pairs
 void read_key_value_pairs(std::string filename, std::vector<std::string>& keys, std::vector<std::string>& values) {
+
     std::ifstream file(filename, std::ios::binary);
     if (!file.is_open()) {
         std::cerr << "Error opening file: " << filename << std::endl;
         return;
     }
-    int a = 0;
+    // int a = 0;
     file.seekg(0, ios::end);
     streampos fileSize = file.tellg();
     file.seekg(0, ios::beg);
     uint64_t count = 0;
     while (count < fileSize / (KEY_SIZE+VALUE_SIZE)) {
-        std::string key_str(KEY_SIZE, 0);
+        std::string key_str(8, KEY_SIZE);
         file.read(&key_str[0], KEY_SIZE);
         keys.push_back(key_str);
-        // uint64_t key = to_type<uint64_t>(key_str);
 
         std::string value_str(VALUE_SIZE, 0);
         file.read(&value_str[0], VALUE_SIZE);
+        int trim_sie = rand() % (TRIM_MAX - TRIM_MIN + 1) + TRIM_MIN;
+        value_str = value_str.substr(0, VALUE_SIZE-trim_sie);
         values.push_back(value_str);
         count ++;
         // std::cout << "Key: " << key_str << " Value: " << value_str << std::endl;
@@ -86,10 +92,12 @@ using ROCKSDB_NAMESPACE::WriteBatch;
 using ROCKSDB_NAMESPACE::WriteOptions;
 using rocksdb::BlockBasedTableOptions;
 int main(int argc, char* argv[]) {
+    srand(4981);
     if (argc < 3) {
         std::cerr << "Usage: " << argv[0] << " <db_name> <ingest_file>" << std::endl;
         return -1;
     }
+    std::cout << "First rnad()" << rand() << std::endl;
     // TODO: CHANGE HERE
     std::string dbname = argv[1];
     std::string filename = argv[2];
@@ -111,7 +119,7 @@ int main(int argc, char* argv[]) {
     table_options.enable_index_compression = false;
 
     // TODO: Change the index type IF Default
-    table_options.index_type = BlockBasedTableOptions::kLearnedIndexWithPLR;
+    // table_options.index_type = BlockBasedTableOptions::kLearnedIndexWithPLR;
     options.table_factory.reset(NewBlockBasedTableFactory(table_options));
     // Change the index type in rocksdb
     std::cout << "Ingesting " << keys.size() << " key-value pairs" << std::endl;

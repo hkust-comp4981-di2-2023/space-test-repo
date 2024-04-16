@@ -3,8 +3,12 @@
 #include <iostream>
 // #include <climit>
 #include <string>
+#include <thread>
 
 using namespace std;
+
+const int KEY_SIZE = 8;
+const int VALUE_SIZE = 400;
 
 template<typename T>
 std::string to_string(T value) {
@@ -51,14 +55,14 @@ void generate_random_key_value_pairs_uniform(std::string filename, int num_pairs
 
     for (int i = 0; i < num_pairs; i++) {
         std::string key {};
-        for (int j = 0; j < 8; j++) {
+        for (int j = 0; j < KEY_SIZE; j++) {
             key.push_back(static_cast<char>(dis(gen)));
             file.write(to_string(dis(gen)).c_str(), 1);
         }
         // std::string key_str = to_string(key);
 
         std::string value_str {};
-        for (int j = 0; j < 400; j++) {
+        for (int j = 0; j < VALUE_SIZE; j++) {
             value_str.push_back(static_cast<char>(dis(gen)));
             file.write(to_string(dis(gen)).c_str(), 1);
         }
@@ -81,7 +85,7 @@ void generate_random_key_value_pairs_exponential(std::string filename, int num_p
         std::string key_str = to_string<uint64_t>(key);
         file.write(key_str.c_str(), 8);
         std::string value_str {};
-        for (int j = 0; j < 400; j++) {
+        for (int j = 0; j < VALUE_SIZE; j++) {
             value_str.push_back(static_cast<char>(dis(gen)));
             file.write(to_string(dis(gen)).c_str(), 1);
         }
@@ -105,10 +109,10 @@ void generate_random_key_value_pairs_linear(std::string filename, int num_pairs)
         std::string key_str = to_string<uint64_t>(key);
         file.write(key_str.c_str(), 8);
         std::string value_str {};
-        for (int j = 0; j < 400; j++) {
+        for (int j = 0; j < VALUE_SIZE; j++) {
             value_str.push_back(static_cast<char>(dis(gen)));
             file.write(to_string(dis(gen)).c_str(), 1);
-        }
+        } 
         // cout original key and value
         // std::cout << "Key: " << key << " Value: " << value_str << std::endl;
     }
@@ -122,8 +126,14 @@ int main(int argc, char* argv[]) {
     }
     std::string filename = argv[1];
     int num_pairs = std::stoi(argv[2]);
-    generate_random_key_value_pairs_uniform(filename+"_uniform.dat", num_pairs);
-    generate_random_key_value_pairs_exponential(filename+"_exponential.dat", num_pairs);
+    std::thread t1 {generate_random_key_value_pairs_uniform, filename+"_uniform.dat", num_pairs};
+    // generate_random_key_value_pairs_uniform(filename+"_uniform.dat", num_pairs);
+    std::thread t2 {generate_random_key_value_pairs_exponential, filename+"_exponential.dat", num_pairs};
+    // generate_random_key_value_pairs_exponential(filename+"_exponential.dat", num_pairs);
+    std::thread t3 {generate_random_key_value_pairs_linear, filename+"_linear.dat", num_pairs};
     generate_random_key_value_pairs_linear(filename+"_linear.dat", num_pairs);
+    t1.join();
+    t2.join();
+    t3.join();
     return 0;
 }

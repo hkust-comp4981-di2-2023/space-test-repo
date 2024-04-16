@@ -8,7 +8,9 @@ using namespace std;
 
 
 const int KEY_SIZE = 8;
-const int VALUE_SIZE = 200;
+const int VALUE_SIZE = 400;
+const int TRIM_MIN = 0;
+const int TRIM_MAX = 399;
 template<typename T>
 std::string to_string(T value) {
     const size_t value_size = sizeof(value) / sizeof(char);
@@ -58,6 +60,8 @@ void read_key_value_pairs(std::string filename, std::vector<std::string>& keys, 
 
         std::string value_str(VALUE_SIZE, 0);
         file.read(&value_str[0], VALUE_SIZE);
+        int trim = rand() % (TRIM_MAX - TRIM_MIN + 1) + TRIM_MIN;
+        value_str = value_str.substr(0, trim);
         values.push_back(value_str);
         count ++;
         // std::cout << "Key: " << key_str << " Value: " << value_str << std::endl;
@@ -86,6 +90,8 @@ using ROCKSDB_NAMESPACE::WriteBatch;
 using ROCKSDB_NAMESPACE::WriteOptions;
 using rocksdb::BlockBasedTableOptions;
 int main(int argc, char* argv[]) {
+    srand(4981);
+    std::cout << "First rnad()" << rand() << std::endl;
     if (argc < 3) {
         std::cerr << "Usage: " << argv[0] << " <db_name> <ingest_file>" << std::endl;
         return -1;

@@ -6,6 +6,12 @@
 
 using namespace std;
 
+const int KEY_SIZE = 8;
+const int VALUE_SIZE = 400;
+const int TRIM_MIN = 0;
+const int TRIM_MAX = 399;
+
+
 template<typename T>
 std::string to_string(T value) {
     const size_t value_size = sizeof(value) / sizeof(char);
@@ -35,39 +41,6 @@ T to_type(std::string str) {
     return obj.value;
 }
 
-// Generate random key-value pairs
-
-// First generate random keys-value pairs in uniform distribution
-// KEY: 8 bytes
-// VALUE: 20 bytes
-// Use above template functions
-// Write the result an array of bytes to a file
-void generate_random_key_value_pairs_uniform(std::string filename, int num_pairs) {
-    std::ofstream file(filename);
-    // Generate random key-value pairs byte by byte using uint8_t
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<uint8_t> dis(0, 255);
-
-    for (int i = 0; i < num_pairs; i++) {
-        std::string key {};
-        for (int j = 0; j < 8; j++) {
-            key.push_back(static_cast<char>(dis(gen)));
-            file.write(to_string(dis(gen)).c_str(), 1);
-        }
-        // std::string key_str = to_string(key);
-
-        std::string value_str {};
-        for (int j = 0; j < 400; j++) {
-            value_str.push_back(static_cast<char>(dis(gen)));
-            file.write(to_string(dis(gen)).c_str(), 1);
-        }
-        // cout original key and value
-        // std::cout << "Key: " << key << " Value: " << value_str << std::endl;
-        
-    }
-    file.close();
-}
 
 // Read the file and print the key-value pairs
 void read_key_value_pairs(std::string filename, std::vector<std::string>& keys, std::vector<std::string>& values) {
@@ -81,20 +54,20 @@ void read_key_value_pairs(std::string filename, std::vector<std::string>& keys, 
     streampos fileSize = file.tellg();
     file.seekg(0, ios::beg);
     uint64_t count = 0;
-    while (count < fileSize / 408) {
-        std::string key_str(8, 0);
-        file.read(&key_str[0], 8);
+    while (count < fileSize / (KEY_SIZE+VALUE_SIZE)) {
+        std::string key_str(KEY_SIZE, 0);
+        file.read(&key_str[0], KEY_SIZE);
         keys.push_back(key_str);
         uint64_t key = to_type<uint64_t>(key_str);
 
-        std::string value_str(400, 0);
-        file.read(&value_str[0], 400);
+        std::string value_str(VALUE_SIZE, 0);
+        file.read(&value_str[0], VALUE_SIZE);
         values.push_back(value_str);
         count ++;
         // std::cout << "Key: " << key_str << " Value: " << value_str << std::endl;
     }
     file.close();
-    cout << a << endl;
+    // cout << a << endl;
 }
 
 // teat by using main function
@@ -145,7 +118,7 @@ int main(int argc, char* argv[]) {
     // table_options.index_type = BlockBasedTableOptions::kLearnedIndexWithPLR;
     options.table_factory.reset(NewBlockBasedTableFactory(table_options));
     // Change the index type in rocksdb
-
+    std::cout << "Ingesting " << keys.size() << " key-value pairs" << std::endl;
     rocksdb::Status status = rocksdb::DB::Open(options, dbname, &db);
     if (!status.ok()) {
         std::cerr << "Unable to open/create testdb" << std::endl;
