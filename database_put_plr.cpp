@@ -8,7 +8,8 @@ using namespace std;
 
 
 const int KEY_SIZE = 8;
-const int VALUE_SIZE = 200;
+const int VALUE_SIZE = 400;
+const int BLOCK_SIZE = 4;
 template<typename T>
 std::string to_string(T value) {
     const size_t value_size = sizeof(value) / sizeof(char);
@@ -109,6 +110,7 @@ int main(int argc, char* argv[]) {
     options.create_if_missing = true;
     BlockBasedTableOptions table_options;
     table_options.enable_index_compression = false;
+    table_options.block_size = BLOCK_SIZE * 1024;
 
     // TODO: Change the index type IF Default
     table_options.index_type = BlockBasedTableOptions::kLearnedIndexWithPLR;

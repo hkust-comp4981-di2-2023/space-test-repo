@@ -8,9 +8,7 @@ using namespace std;
 
 const int KEY_SIZE = 8;
 const int VALUE_SIZE = 400;
-const int TRIM_MIN = 0;
-const int TRIM_MAX = 399;
-
+const int BLOCK_SIZE = 4;
 
 template<typename T>
 std::string to_string(T value) {
@@ -113,6 +111,7 @@ int main(int argc, char* argv[]) {
     options.create_if_missing = true;
     BlockBasedTableOptions table_options;
     table_options.enable_index_compression = false;
+    table_options.block_size = BLOCK_SIZE * 1024;
 
     // TODO: Change the index type IF Default
     // table_options.index_type = BlockBasedTableOptions::kLearnedIndexWithPLR;
