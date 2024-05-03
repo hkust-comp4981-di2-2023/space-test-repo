@@ -3,8 +3,21 @@
 #include <string>
 #include <vector>
 #include <random>
-
+#include "rocksdb/db.h"
+#include "rocksdb/options.h"
+#include "rocksdb/slice.h"
+#include "rocksdb/status.h"
+#include "rocksdb/table.h"
 using namespace std;
+using ROCKSDB_NAMESPACE::DB;
+using ROCKSDB_NAMESPACE::Options;
+using ROCKSDB_NAMESPACE::PinnableSlice;
+using ROCKSDB_NAMESPACE::ReadOptions;
+using ROCKSDB_NAMESPACE::Status;
+using ROCKSDB_NAMESPACE::WriteBatch;
+using ROCKSDB_NAMESPACE::WriteOptions;
+using rocksdb::BlockBasedTableOptions;
+void write_to_db(rocksdb::DB* db, string key, string value);
 
 
 const int KEY_SIZE = 8;
@@ -40,7 +53,7 @@ T to_type(std::string str) {
 }
 
 // Read the file and print the key-value pairs
-void read_key_value_pairs(std::string filename, std::vector<std::string>& keys, std::vector<std::string>& values) {
+void read_key_value_pairs(std::string filename, rocksdb::DB* db) {
     std::ifstream file(filename, std::ios::binary);
     if (!file.is_open()) {
         std::cerr << "Error opening file: " << filename << std::endl;
@@ -54,15 +67,17 @@ void read_key_value_pairs(std::string filename, std::vector<std::string>& keys, 
     while (count < fileSize / (KEY_SIZE+VALUE_SIZE)) {
         std::string key_str(KEY_SIZE, 0);
         file.read(&key_str[0], KEY_SIZE);
-        keys.push_back(key_str);
+        // keys.push_back(key_str);
         // uint64_t key = to_type<uint64_t>(key_str);
 
         std::string value_str(VALUE_SIZE, 0);
         file.read(&value_str[0], VALUE_SIZE);
-        values.push_back(value_str);
+        // values.push_back(value_str);
+        write_to_db(db, key_str, value_str);
         count ++;
         // std::cout << "Key: " << key_str << " Value: " << value_str << std::endl;
     }
+    std::cout << "Read " << count << " key-value pairs" << std::endl;
     file.close();
     // cout << a << endl;
 }
@@ -73,19 +88,16 @@ void read_key_value_pairs(std::string filename, std::vector<std::string>& keys, 
 // 3. Flush at last
 // 4. Close the DB
 // using rocksdb
-#include "rocksdb/db.h"
-#include "rocksdb/options.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/status.h"
-#include "rocksdb/table.h"
-using ROCKSDB_NAMESPACE::DB;
-using ROCKSDB_NAMESPACE::Options;
-using ROCKSDB_NAMESPACE::PinnableSlice;
-using ROCKSDB_NAMESPACE::ReadOptions;
-using ROCKSDB_NAMESPACE::Status;
-using ROCKSDB_NAMESPACE::WriteBatch;
-using ROCKSDB_NAMESPACE::WriteOptions;
-using rocksdb::BlockBasedTableOptions;
+
+
+
+void write_to_db(rocksdb::DB* db, string key, string value) {
+    rocksdb::Status status = db->Put(rocksdb::WriteOptions(), key, value);
+    if (!status.ok()) {
+        std::cerr << "Unable to put key-value pair" << std::endl;
+        return;
+    }
+}
 int main(int argc, char* argv[]) {
     if (argc < 3) {
         std::cerr << "Usage: " << argv[0] << " <db_name> <ingest_file>" << std::endl;
@@ -98,7 +110,7 @@ int main(int argc, char* argv[]) {
     // read the file and store the key-value pairs
     std::vector<std::string> keys;
     std::vector<std::string> values;
-    read_key_value_pairs(filename, keys, values);
+    
 
     // open a DB and put all the key-value pairs
     rocksdb::DB* db;
@@ -116,24 +128,24 @@ int main(int argc, char* argv[]) {
     table_options.index_type = BlockBasedTableOptions::kLearnedIndexWithPLR;
     options.table_factory.reset(NewBlockBasedTableFactory(table_options));
     // Change the index type in rocksdb
-    std::cout << "Ingesting " << keys.size() << " key-value pairs" << std::endl;
+    // std::cout << "Ingesting " << keys.size() << " key-value pairs" << std::endl;
     rocksdb::Status status = rocksdb::DB::Open(options, dbname, &db);
     if (!status.ok()) {
         std::cerr << "Unable to open/create testdb" << std::endl;
         return -1;
     }
-    for (int i = 0; i < keys.size(); i++) {
-        // std::cout << "Key: " << keys[i] << " Value: " << values[i] << std::endl;
-        status = db->Put(rocksdb::WriteOptions(), keys[i], values[i]);
-        if (!status.ok()) {
-            std::cerr << "Unable to put key-value pair" << std::endl;
-            return -1;
-        }
-    }
+    read_key_value_pairs(filename, db);
+    // for (int i = 0; i < keys.size(); i++) {
+    //     // std::cout << "Key: " << keys[i] << " Value: " << values[i] << std::endl;
+    //     status = db->Put(rocksdb::WriteOptions(), keys[i], values[i]);
+    //     if (!status.ok()) {
+    //         std::cerr << "Unable to put key-value pair" << std::endl;
+    //         return -1;
+    //     }
+    // }
 
     // flush at last
     db->Flush(ROCKSDB_NAMESPACE::FlushOptions());
-
     // close the DB
     // db->Close();
 
